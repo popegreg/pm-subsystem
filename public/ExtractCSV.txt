@@ -1,0 +1,415 @@
+<?php
+namespace App\Http\Controllers\Nav;
+use App\Http\Controllers\Controller;
+use App\Http\Controllers\CommonController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth; #Auth facade
+use Illuminate\Support\Facades\URL;
+use Illuminate\Routing\UrlGenerator;
+use App\Http\Requests;
+use DB;
+use Config;
+use Carbon\Carbon;
+use PDF;
+use App;
+use Excel;
+use File;
+class ExtractCSVFileController extends Controller
+{
+    protected $mysql;
+    protected $mssql;
+    protected $common;
+
+    
+    public function __construct()
+    {
+        $this->middleware('auth');
+        $com = new CommonController;
+
+        if (Auth::user() != null) {
+            $this->mysql = $com->userDBcon(Auth::user()->productline,'wbs');
+            $this->mssql = $com->userDBcon(Auth::user()->productline,'mssql');
+            $this->common = $com->userDBcon(Auth::user()->productline,'common');
+
+
+                          
+        } else {
+            return redirect('/');
+        }
+    }
+
+     public function DataExtract()
+    {
+    	 $com = new CommonController;
+
+        if(!$com->getAccessRights(Config::get('constants.MODULE_CODE_NAVCSV'), $userProgramAccess))
+        {
+            return redirect('/home');
+        }
+        else
+        {
+            return view('Nav.dataextract',['userProgramAccess' => $userProgramAccess]);
+        }
+    }
+
+
+
+     public function ExportCSV(Request $req)
+    {
+         try {
+            
+     
+        // "success"
+        $com = new CommonController;
+        $date = date('Y-m-d');
+        $sample = "__BOM";
+        $rawmats = "__RMReceipt";
+        $packinglist = "__PackingList";
+        $consumption = "__Consumptipn";
+        $plines = explode(",",$req->productline);
+        $pertable =$req->pertable;
+ // BOM /
+        foreach ($plines as $key => $pline) 
+        {
+             if($pline == "TS"){ 
+               $path = "\\\\192.168.200.57\\theuploadtest\\NAV\\TS_YPICS_Data";
+            }elseif ($pline == "CN") {
+
+                $path = "\\\\192.168.200.57\\theuploadtest\\NAV\\CN_YPICS_Data";
+
+            }else if($pline == "YF"){
+
+                 $path = "\\\\192.168.200.57\\theuploadtest\\NAV\\YF_YPICS_Data";
+            }
+
+           if (strpos($pertable, 'Bom') !== false) 
+           {
+                $this->mssql = $com->userDBcon($pline,'mssql');
+                Excel::create($pline.$sample, function($excel) use($req)
+                {
+                    $excel->sheet('Report', function($sheet) use($req)
+                    {
+
+                        $sheet->cell('A1', "SORDER");
+                        $sheet->cell('B1', 'CODE');
+                        $sheet->cell('C1', "ProductCode");
+                        $sheet->cell('D1', "kcode.");
+                        $sheet->cell('E1', "partname");
+                        $sheet->cell('F1', "rqdqty");
+                        $sheet->cell('G1', "location");
+                        $sheet->cell('H1', "drawnum");
+                        $sheet->cell('J1', "supplier");
+                        $sheet->cell('K1', "whs100");
+                        $sheet->cell('L1', "whs102");
+                     
+                   
+                       $row = 2;
+
+                       $data = DB::connection($this->mssql)
+                               ->select("SELECT TOP 500 r.SORDER, r.CODE, ha.NAME as ProductCode, hk.CODE as kcode, 
+                                        h.NAME as partname, 
+                                        hk.KVOL as rqdqty, 
+                                        x.RACKNO as location, 
+                                        i.DRAWING_NUM as drawnum, 
+                                        i.VENDOR as supplier, 
+                                        x.WHS100 as whs100, 
+                                        x.WHS102 as whs102
+
+                                       FROM XRECE r
+
+                                       LEFT JOIN XSLIP s ON r.SORDER = s.SEIBAN
+                                       LEFT JOIN XHIKI hk ON s.PORDER = hk.PORDER
+                                       LEFT JOIN XITEM i ON i.CODE = hk.CODE
+                                       LEFT JOIN XHEAD h ON h.CODE = hk.CODE
+
+                    LEFT JOIN XHEAD ha ON ha.CODE = r.CODE
+                                       LEFT JOIN (SELECT z.CODE, 
+
+                                      ISNULL(z1.ZAIK,0) as WHS100, 
+                                      ISNULL(z2.ZAIK,0) as WHS102, 
+                                      z1.RACKNO FROM XZAIK z
+
+                                       LEFT JOIN XZAIK z1 ON z1.CODE = z.CODE AND z1.HOKAN = 'WHS100'
+                                       LEFT JOIN XZAIK z2 ON z2.CODE = z.CODE AND z2.HOKAN = 'WHS102'
+                                            WHERE z.RACKNO <> ''
+                                           GROUP BY z.CODE, z1.ZAIK, z2.ZAIK, z1.RACKNO
+                                       ) x ON x.CODE = hk.CODE
+
+                    WHERE hk.CODE is not null
+
+                    GROUP BY
+                        r.SORDER,
+                        r.CODE, 
+                        ha.NAME,
+                        hk.CODE, 
+                        h.NAME, 
+                        i.VENDOR, 
+                        hk.KVOL, 
+                        i.DRAWING_NUM, 
+                        x.WHS100, 
+                        x.WHS102, 
+                        x.RACKNO
+                    ORDER BY r.SORDER");
+          
+                        foreach ($data as $key => $md) {
+                            $sheet->setHeight($row, 20);
+                            $sheet->cell('A'.$row, $md->SORDER);
+                            $sheet->cell('B'.$row, $md->CODE);
+                            $sheet->cell('C'.$row, $md->ProductCode);
+                            $sheet->cell('D'.$row, $md->kcode);
+                            $sheet->cell('E'.$row, $md->partname);
+                            $sheet->cell('F'.$row, $md->rqdqty);
+                            $sheet->cell('G'.$row, $md->location);
+                            $sheet->cell('H'.$row, $md->drawnum);
+                            $sheet->cell('I'.$row, $md->supplier);
+                            $sheet->cell('J'.$row, $md->whs100);
+                            $sheet->cell('K'.$row, $md->whs102);
+
+            
+                            $row++;
+                        }  
+                    });
+                })->store('csv',$path);
+            }
+
+            if(strpos($pertable, 'Raw_Mats') !== false)
+            {
+                    $this->mssql = $com->userDBcon($pline,'mssql');
+                    Excel::create($pline.$rawmats, function($excel) use($req)
+                    {
+                        $excel->sheet('Report', function($sheet) use($req)
+                        {
+
+                            $sheet->cell('A1', "CODE");
+                            $sheet->cell('B1', 'NAME');
+                            $sheet->cell('C1', "PRICE");
+                            $sheet->cell('D1', "BUNR.");
+                            $sheet->cell('E1', "BUMO");
+                            $sheet->cell('F1', "VENDOR");
+                            $sheet->cell('G1', "DRAWING_NUM");
+                            $sheet->cell('H1', "INPUTDATE");
+                            $sheet->cell('I1', "INPUTUSER");
+                       
+                           $row = 2;
+
+                           $data = DB::connection($this->mssql)
+                                            ->select("
+                                    SELECT Top 500 i.CODE, h.NAME, t.PRICE, i.BUNR, i.BUMO, i.VENDOR, i.DRAWING_NUM, i.INPUTDATE, i.INPUTUSER 
+                                    FROM XITEM i
+                                    LEFT JOIN XHEAD h ON i.CODE = h.CODE
+                                    LEFT JOIN XTANK t ON i.CODE = t.CODE
+                                    WHERE t.PRICE is not null
+                                    UNION
+                                    SELECT i.CODE, h.NAME, b.PRICE, i.BUNR, i.BUMO, i.VENDOR, i.DRAWING_NUM, i.INPUTDATE, i.INPUTUSER 
+                                    FROM XITEM i
+                                    LEFT JOIN XHEAD h ON i.CODE = h.CODE
+                                    LEFT JOIN XBAIK b ON i.CODE = b.CODE
+                                    WHERE b.PRICE is not null
+                                    ORDER BY i.CODE");
+              
+                            foreach ($data as $key => $md) {
+                                $sheet->setHeight($row, 20);
+                                $sheet->cell('A'.$row, $md->CODE);
+                                $sheet->cell('B'.$row, $md->NAME);
+                                $sheet->cell('C'.$row, $md->PRICE);
+                                $sheet->cell('D'.$row, $md->BUNR);
+                                $sheet->cell('E'.$row, $md->BUMO);
+                                $sheet->cell('F'.$row, $md->VENDOR);
+                                $sheet->cell('G'.$row, $md->DRAWING_NUM);
+                                $sheet->cell('H'.$row, $md->INPUTDATE);
+                                $sheet->cell('I'.$row, $md->INPUTUSER);
+                
+                                $row++;
+                            }  
+                     });
+                })->store('csv',$path); 
+            }
+
+
+            if(strpos($pertable, 'Packinglist') !== false)
+            {     
+              $this->mysql = $com->userDBcon($pline,'mysql');
+                Excel::create($pline.$packinglist, function($excel) use($req)
+                {
+                    $excel->sheet('Report', function($sheet) use($req)
+                    {
+
+                        $sheet->cell('A1', "po");
+                        $sheet->cell('B1', 'description');
+                        $sheet->cell('C1', "item_code");
+                        $sheet->cell('D1', "price");
+                        $sheet->cell('E1', "box_no");
+                        $sheet->cell('F1', "gross_weight");
+                        $sheet->cell('G1', "create_user");
+                        $sheet->cell('H1', "update_user");
+                        $sheet->cell('I1', "created_at");
+                        $sheet->cell('J1', "updated_at");
+                   
+                       $row = 2;
+
+                       $data = DB::connection($this->mysql)
+                                        ->select("
+                                SELECT po, description,item_code, price, box_no, qty, gross_weight, create_user, update_user, created_at, updated_at FROM
+                                pmi_traffic_ts.tbl_packing_list_details");
+          
+                        foreach ($data as $key => $md) {
+                            $sheet->setHeight($row, 20);
+                            $sheet->cell('A'.$row, $md->po);
+                            $sheet->cell('B'.$row, $md->description);
+                            $sheet->cell('C'.$row, $md->item_code);
+                            $sheet->cell('D'.$row, $md->price);
+                            $sheet->cell('E'.$row, $md->box_no);
+                            $sheet->cell('F'.$row, $md->gross_weight);
+                            $sheet->cell('G'.$row, $md->create_user);
+                            $sheet->cell('H'.$row, $md->update_user);
+                            $sheet->cell('I'.$row, $md->created_at);
+                            $sheet->cell('J'.$row, $md->updated_at);
+
+                            $row++;
+                        }  
+                    });
+                })->store('csv',$path); 
+            }
+            if(strpos($pertable,'Consumption')!== false)
+            {
+                 $this->mssql = $com->userDBcon($pline,'mssql');
+                Excel::create($pline.$consumption, function($excel) use($req)
+                {
+                    $excel->sheet('Report', function($sheet) use($req)
+                    {
+
+                        $sheet->cell('A1', "CODE");
+                        $sheet->cell('B1', 'NAME');
+                        $sheet->cell('C1', "BUNR");
+                        $sheet->cell('D1', "BUMO");
+                        $sheet->cell('E1', "TtlRequired");
+                        $sheet->cell('F1', "TtlCompleted");
+                        $sheet->cell('G1', "REQCOM");
+                        $sheet->cell('H1', "WHS100");
+                        $sheet->cell('I1', "WHS102");
+                        $sheet->cell('J1', "WHSNON");
+                        $sheet->cell('K1', "ASSY100");
+                        $sheet->cell('L1', "ASSY102");
+                        $sheet->cell('M1', "WHSSM");
+                        $sheet->cell('N1', "Scheduled");
+                        $sheet->cell('O1', "Actual");
+                        $sheet->cell('P1', "OrderBal");
+                   
+                       $row = 2;
+
+                       $data = DB::connection($this->mssql)
+                                        ->select("SELECT TOP 500 i.CODE,    
+                                                   h.NAME,
+                                                   i.BUNR,
+                                                   i.BUMO,
+                                                   ISNULL(hk.totalReq,0) as TtlRequired,
+                                                   ISNULL(hk.totalComplete,0) as TtlCompleted,
+                                                   ISNULL(hk.REQCOM,0) as REQCOM,
+                                                   SUM(x.WHS100) as WHS100,
+                                                   SUM(x.WHS102) as WHS102,
+                                                   SUM(x.WHSNON) as WHSNON,
+                                                   SUM(x.ASSY100) as ASSY100,
+                                                   SUM(x.ASSY102) as ASSY102,
+                                                   SUM(x.WHSSM) as WHSSM,
+                                                   ISNULL(SUM(s.KVOL),0) AS Scheduled,
+                                                   ISNULL(SUM(s.TJITU),0) AS Actual,
+                                                   ISNULL(s.OrderBal,0) as OrderBal
+
+                                                   FROM XITEM i
+                                                   LEFT join XHEAD h ON i.CODE = h.CODE
+                                                   LEFT join (SELECT CODE,
+                                                                   ISNULL(SUM(KVOL),0) as totalReq,
+                                                                   ISNULL(SUM(TJITU),0) as totalComplete,
+                                                                   ISNULL((SUM(KVOL) - SUM(TJITU)),0) as REQCOM
+                                                   FROM XHIKI
+                                                   GROUP BY CODE) hk ON i.CODE = hk.CODE
+                                               LEFT join (SELECT CODE,
+                                                               ISNULL(SUM(KVOL),0) as KVOL,
+                                                               ISNULL(SUM(TJITU),0) as TJITU,
+                                                               ISNULL((SUM(KVOL) - SUM(TJITU)),0) AS OrderBal FROM XSLIP
+                                                               WHERE PORDER not like 'GR%'
+
+                                                  GROUP BY CODE) s ON i.CODE = s.CODE
+                                                   LEFT join (SELECT z.CODE,
+                                                                   ISNULL(z1.ZAIK,0) as WHS100,
+                                                                   ISNULL(z2.ZAIK,0) as WHS102,
+                                                                   ISNULL(z3.ZAIK,0) as WHSNON,
+                                                                   ISNULL(za1.ZAIK,0) as ASSY100,
+                                                                   ISNULL(za2.ZAIK,0) as ASSY102,
+                                                                   ISNULL(z4.ZAIK,0) as WHSSM,
+                                                                   ISNULL(z1.ZAIK + z2.ZAIK + z3.ZAIK + z4.ZAIK + za1.ZAIK, 0) as TOTAL
+                                                   FROM XZAIK z
+                                                       LEFT JOIN XZAIK z1 ON z1.CODE = z.CODE AND z1.HOKAN = 'WHS100'
+                                                       LEFT JOIN XZAIK z2 ON z2.CODE = z.CODE AND z2.HOKAN = 'WHS102'
+                                                       LEFT JOIN XZAIK z3 ON z3.CODE = z.CODE AND z3.HOKAN = 'WHS-NON'
+                                                       LEFT JOIN XZAIK za1 ON za1.CODE = z.CODE AND za1.HOKAN = 'ASSY100'
+                                                       LEFT JOIN XZAIK za2 ON za2.CODE = z.CODE AND za2.HOKAN = 'ASSY102'
+                                                       LEFT JOIN XZAIK z4 ON z4.CODE = z.CODE AND z4.HOKAN = 'WHS-SM'
+                                                   WHERE z.JYOGAI <> '1'
+                                                   GROUP BY z.CODE, z1.ZAIK ,z2.ZAIK, z3.ZAIK, z4.ZAIK, za1.ZAIK, za2.ZAIK
+                                                   ) AS x
+                                                   
+                                       ON i.CODE = x.CODE
+                                       WHERE i.BUMO = 'PURH100' and i.HOKAN = 'WHS100'
+                                       GROUP BY i.CODE, h.NAME, i.BUNR, i.BUMO, hk.totalReq, hk.totalComplete,hk.REQCOM,s.OrderBal;");
+          
+                        foreach ($data as $key => $md) {
+                            $sheet->setHeight($row, 20);
+                            $sheet->cell('A'.$row, $md->CODE);
+                            $sheet->cell('B'.$row, $md->NAME);
+                            $sheet->cell('C'.$row, $md->BUNR);
+                            $sheet->cell('D'.$row, $md->BUMO);
+                            $sheet->cell('E'.$row, $md->TtlRequired);
+                            $sheet->cell('F'.$row, $md->TtlCompleted);
+                            $sheet->cell('G'.$row, $md->REQCOM);
+                            $sheet->cell('H'.$row, $md->WHS100);
+                            $sheet->cell('I'.$row, $md->WHS102);
+                            $sheet->cell('J'.$row, $md->WHSNON);
+                            $sheet->cell('K'.$row, $md->ASSY100);
+                            $sheet->cell('L'.$row, $md->ASSY102);
+                            $sheet->cell('M'.$row, $md->WHSSM);
+                            $sheet->cell('N'.$row, $md->Scheduled);
+                            $sheet->cell('O'.$row, $md->Actual);
+                            $sheet->cell('P'.$row, $md->OrderBal);
+            
+                            $row++;
+                        }  
+                    });
+                })->store('csv',$path);
+            }    
+        }
+            return redirect('/dataextract');
+           } catch (Exception $error) {
+            return redirect('www.google.com');
+        }
+
+      
+    }
+
+    public function TimeSetting(Request $req){
+
+        $data = DB::connection($this->common)->table('time_setter')
+                    ->insert([
+                        'hour'=>$req->hour,
+                        'minute'=>$req->minute,
+                        'am_pm'=>$req->am_pm   
+                    ]);
+        return response()->json($data); 
+    }
+    public function GetTime(Request $req){
+        $data = DB::connection($this->common)
+                    ->select("SELECT id,hour,minute,am_pm FROM time_setter");
+
+        return response()->json($data); 
+    }
+    public function UpdateTime(Request $req){
+        $data = DB::connection($this->common)->table('time_setter')
+                    ->where('id',$req->id)
+                    ->update([
+                            'hour'=> $req->hour,
+                            'minute'=> $req->minute,
+                            'am_pm'=> $req->am_pm,
+                    ]);
+        return response()->json($data); 
+    }
+}
