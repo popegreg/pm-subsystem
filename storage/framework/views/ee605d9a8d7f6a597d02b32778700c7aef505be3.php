@@ -467,14 +467,14 @@
                     <div class="form-group">
                         <label class="control-label col-sm-3">PO Number</label>
                         <div class="col-sm-7">
-                            <input class="form-control input-sm" type="text" value="" name="search_po" id="search_po"/>
+                            <input class="form-control input-sm" type="text" value="" name="search_po" id="search_po" autocomplete="off" />
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label class="control-label col-sm-3">From</label>
                         <div class="col-sm-7">
-                            <input class="form-control input-sm date-picker" type="text" value="" name="search_from" id="search_from"/>
+                            <input class="form-control input-sm date-picker" type="text" value="" name="search_from" id="search_from" autocomplete="off"/>
                             <div id="er_search_from"></div>
                         </div>
                     </div>
@@ -482,7 +482,7 @@
                     <div class="form-group">
                         <label class="control-label col-sm-3">To</label>
                         <div class="col-sm-7">
-                            <input class="form-control input-sm date-picker" type="text" value="" name="search_to" id="search_to"/>
+                            <input class="form-control input-sm date-picker" type="text" value="" name="search_to" id="search_to" autocomplete="off"/>
                             <div id="er_search_to"></div>
                         </div>
                     </div>

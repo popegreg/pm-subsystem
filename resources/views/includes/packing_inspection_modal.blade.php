@@ -316,7 +316,7 @@
                             <div class="form-group">
                                 <label class="control-label col-sm-3">PO Number</label>
                                 <div class="col-sm-7">
-                                    <input class="form-control input-sm" type="text" value="" name="search_po" id="search_po"/>
+                                    <input class="form-control input-sm" type="text" value="" name="search_po" id="search_po" autocomplete="off" />
                                 </div>
                             </div>
                             <div class="form-group">
