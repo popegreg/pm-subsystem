@@ -72,6 +72,7 @@ trait AuthenticatesUsers
         }
 
         $credentials = $this->getCredentials($request);
+       
         $locked = User::where('locked', 1)
                         ->where('user_id',$request->user_id)
                         ->first();
@@ -82,13 +83,14 @@ trait AuthenticatesUsers
                             ]);
         }
 
+      
         if (Auth::guard($this->getGuard())->attempt($credentials, $request->has('remember'))) {
             $now = Carbon::now();
-            $user = User::where('user_id',$request['user_id'])
-                        ->update(['last_date_loggedin' => $now]);
+            User::where('user_id',$request['user_id'])->update(['last_date_loggedin' => $now]);
             return $this->handleUserWasAuthenticated($request, $throttles);
         }
-
+        
+    
         // If the login attempt was unsuccessful we will increment the number of attempts
         // to login and redirect the user back to the login form. Of course, when this
         // user surpasses their maximum number of attempts they will get locked out.
