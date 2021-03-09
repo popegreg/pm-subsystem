@@ -495,6 +495,8 @@ function viewstate() {
 		$('.group-checkable').prop('disabled', true);
 		$('.not_for_iqc').prop('disabled', true);
 		$('.is_printed').prop('disabled', true);
+		$('#uploadbatchfiles > div > div.col-sm-6 > div > span').css({'pointer-events': 'none', 'opacity': '0.4'});
+		$('#btn_print_iqc').hide();
 	}
 }
 

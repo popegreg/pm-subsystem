@@ -15,13 +15,13 @@
 *******************************************************************************/
 ?>
 
-@extends('layouts.master')
 
-@section('title')
+
+<?php $__env->startSection('title'); ?>
     WBS | Pricon Microelectronics, Inc.
-@endsection
+<?php $__env->stopSection(); ?>
 
-@push('css')
+<?php $__env->startPush('css'); ?>
 <style type="text/css">
     table.table-fixedheader {
         width: 100%;
@@ -60,18 +60,18 @@
         height: 40px;
     }
 </style>
-@endpush
+<?php $__env->stopPush(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
 
     <?php $state = ""; $readonly = ""; ?>
-    @foreach ($userProgramAccess as $access)
-        @if ($access->program_code == Config::get('constants.MODULE_CODE_WBS'))  <!-- Please update "2001" depending on the corresponding program_code -->
-            @if ($access->read_write == "2")
+    <?php foreach($userProgramAccess as $access): ?>
+        <?php if($access->program_code == Config::get('constants.MODULE_CODE_WBS')): ?>  <!-- Please update "2001" depending on the corresponding program_code -->
+            <?php if($access->read_write == "2"): ?>
                 <?php $state = "disabled"; $readonly = "readonly"; ?>
-            @endif
-        @endif
-    @endforeach
+            <?php endif; ?>
+        <?php endif; ?>
+    <?php endforeach; ?>
 
     <div class="page-content">
 
@@ -79,7 +79,7 @@
         <div class="row">
             <div class="col-md-12">
                 <!-- BEGIN EXAMPLE TABLE PORTLET-->
-                @include('includes.message-block')
+                <?php echo $__env->make('includes.message-block', array_except(get_defined_vars(), array('__data', '__path')))->render(); ?>
                 <div class="portlet box blue" >
                     <div class="portlet-title">
                         <div class="caption">
@@ -196,13 +196,14 @@
                             <div class="col-md-offset-2 col-md-8">
                                 <div class="row">
                                     <div class="col-sm-offset-2 col-sm-8">
-                                        <form class="form-horizontal" method="POST" enctype="multipart/form-data" id="uploadbatchfiles" action="{{ url('/wbsuploadbatchitems') }}">
+                                        <form class="form-horizontal" method="POST" enctype="multipart/form-data" id="uploadbatchfiles" action="<?php echo e(url('/wbsuploadbatchitems')); ?>">
                                             <div class="form-group">
                                                 <label class="control-label col-sm-4">Upload Batch Items</label>
                                                 <div class="col-sm-6">
-                                                    {{ csrf_field() }}
-                                                    <input type="file" class="filestyle" data-buttonName="btn-primary" name="batchfiles" id="batchfiles" {{$readonly}}>
-                                                    {{-- batchfiles --}}
+                                                    <?php echo e(csrf_field()); ?>
+
+                                                    <input type="file" class="filestyle" data-buttonName="btn-primary" name="batchfiles" id="batchfiles" <?php echo e($readonly); ?>>
+                                                    <?php /* batchfiles */ ?>
                                                 </div>
                                                 <div class="col-sm-2">
                                                     <button type="submit" id="btn_upload" class="btn btn-success" <?php echo($state); ?>>
@@ -324,16 +325,16 @@
         </div>
     </div>
 
-    @include('includes.materialreceiving-modal')
+    <?php echo $__env->make('includes.materialreceiving-modal', array_except(get_defined_vars(), array('__data', '__path')))->render(); ?>
 
-@endsection
+<?php $__env->stopSection(); ?>
 
 
-@push('script')
+<?php $__env->startPush('script'); ?>
 <script type="text/javascript">
     
-    var access_state = "{{ $pgaccess }}";
-    var pcode = "{{ $pgcode }}";
+    var access_state = "<?php echo e($pgaccess); ?>";
+    var pcode = "<?php echo e($pgcode); ?>";
 
     $(function() {
         tblDetails();
@@ -369,8 +370,8 @@
 
             var tbl_summary = '';
             var tbl_details = '';
-            var url = '{{url("/wbsmrpostinvoicenum")}}';
-            var token = "{{ Session::token() }}";
+            var url = '<?php echo e(url("/wbsmrpostinvoicenum")); ?>';
+            var token = "<?php echo e(Session::token()); ?>";
             var data = {
                 _token: token,
                 invoiceno: $('#invoiceno').val()
@@ -498,7 +499,7 @@
         });
 
         $('#btn_cancel').on('click', function() {
-            window.location.href="{{url('/materialreceiving')}}";
+            window.location.href="<?php echo e(url('/materialreceiving')); ?>";
         });
 
         $('#btn_discard').on('click', function() {
@@ -569,8 +570,8 @@
             $('#loading').modal('show');
             $('#tbl_search_body').html('');
             var tbl_search = '';
-            var url = '{{url("/wbsmrsearch")}}';
-            var token = "{{ Session::token() }}";
+            var url = '<?php echo e(url("/wbsmrsearch")); ?>';
+            var token = "<?php echo e(Session::token()); ?>";
             var data = {
                 _token: token,
                 from: $('#srch_from').val(),
@@ -649,8 +650,8 @@
 
         $('#tbl_search_body').on('click', '.look_search', function(e) {
             var id = $(this).attr('data-id');
-            var url = '{{url("/wbsmrlookitem")}}';
-            var token = "{{ Session::token() }}";
+            var url = '<?php echo e(url("/wbsmrlookitem")); ?>';
+            var token = "<?php echo e(Session::token()); ?>";
             var data = {
             _token: token,
                 id: id
@@ -695,8 +696,8 @@
 
         $('#btn_barcode').on('click', function() {
             $('#lodaing').modal('show');
-            var url = '{{url("/wbsmrprintbarcode")}}';
-            var token = "{{ Session::token() }}";
+            var url = '<?php echo e(url("/wbsmrprintbarcode")); ?>';
+            var token = "<?php echo e(Session::token()); ?>";
             var data = {
                 _token: token,
                 receivingno: $('#receivingno').val(),
@@ -737,8 +738,8 @@
             var lotno = $(this).attr('data-lotno');
             var location = $(this).attr('data-location');
             var barcode = $(this).attr('data-barcode');
-            var url = '{{url("/wbsmrprintbarcode")}}';
-            var token = "{{ Session::token() }}";
+            var url = '<?php echo e(url("/wbsmrprintbarcode")); ?>';
+            var token = "<?php echo e(Session::token()); ?>";
             var data = {
                 _token: token,
                 receivingno: $('#receivingno').val(),
@@ -804,8 +805,8 @@
             if ($('#invoiceno').val() == '' || $('#receivingno').val() == '') {
                 failedMsg("Please provide some values for Invoice Number or Material Receiving Number.");
             } else {
-                var token = "{{ Session::token() }}";
-                var url = '{{url("/wbsmrprintmr")}}'+'?receivingno='+$('#receivingno').val()+'&&_token='+token;
+                var token = "<?php echo e(Session::token()); ?>";
+                var url = '<?php echo e(url("/wbsmrprintmr")); ?>'+'?receivingno='+$('#receivingno').val()+'&&_token='+token;
 
                 window.location.href= url;
             }
@@ -815,8 +816,8 @@
             if ($('#invoiceno').val() == '' || $('#receivingno').val() == '') {
                 failedMsg("Please provide some values for Invoice Number or Material Receiving Number.");
             } else {
-                var token = "{{ Session::token() }}";
-                var url = '{{url("/wbsmrprintiqc")}}'+'?receivingno='+$('#receivingno').val()+'&&_token='+token;
+                var token = "<?php echo e(Session::token()); ?>";
+                var url = '<?php echo e(url("/wbsmrprintiqc")); ?>'+'?receivingno='+$('#receivingno').val()+'&&_token='+token;
 
                 window.location.href= url;
             }
@@ -958,7 +959,7 @@
             });
 
             $.ajax({
-                url: "{{url('/getlocation')}}",
+                url: "<?php echo e(url('/getlocation')); ?>",
                 type: 'GET',
                 dataType: 'JSON',
                 data: {
@@ -979,8 +980,8 @@
         });
 
         $('#btn_all_batch').on('click', function() {
-            var token = "{{ Session::token() }}";
-            var url = "{{ url('/wbsmrreceiveall') }}";
+            var token = "<?php echo e(Session::token()); ?>";
+            var url = "<?php echo e(url('/wbsmrreceiveall')); ?>";
             var data = {
             _token: token,
                 invoiceno: $('#invoiceno').val(),
@@ -1268,8 +1269,8 @@
         var tbl_summary = '';
         var tbl_batch = '';
 
-        var url = '{{url("/wbsgetlatestmr")}}';
-        var token = "{{ Session::token() }}";
+        var url = '<?php echo e(url("/wbsgetlatestmr")); ?>';
+        var token = "<?php echo e(Session::token()); ?>";
         var data = {
         _token: token,
         invoiceno: $('#invoiceno').text()
@@ -1321,8 +1322,8 @@
             var tbl_batch = '';
 
             //$('#loading').modal('show');
-            var url = '{{url("/wbsnavigate")}}';
-            var token = "{{ Session::token() }}";
+            var url = '<?php echo e(url("/wbsnavigate")); ?>';
+            var token = "<?php echo e(Session::token()); ?>";
             var data = {
                 _token: token,
                 receivingno: $('#receivingno').val(),
@@ -1388,8 +1389,8 @@
     }
 
     function getItems() {
-        var url = "{{url('/wbsmrgetitems')}}";
-        var token = "{{ Session::token() }}";
+        var url = "<?php echo e(url('/wbsmrgetitems')); ?>";
+        var token = "<?php echo e(Session::token()); ?>";
         var data = {
         _token: token,
             invoice_no: $('#invoiceno').val()
@@ -1411,8 +1412,8 @@
 
     function getItemData() {
         //add_inputLocation
-        var url = "{{url('/wbsmrgetitemdata')}}";
-        var token = "{{ Session::token() }}";
+        var url = "<?php echo e(url('/wbsmrgetitemdata')); ?>";
+        var token = "<?php echo e(Session::token()); ?>";
         var data = {
         _token: token,
             itemcode: $('#add_inputItemNo').val(),
@@ -1443,8 +1444,8 @@
     }
 
     function getPackage() {
-        var url = "{{url('/wbsmrgetpackage')}}";
-        var token = "{{ Session::token() }}";
+        var url = "<?php echo e(url('/wbsmrgetpackage')); ?>";
+        var token = "<?php echo e(Session::token()); ?>";
         var data = {
             _token: token
         };
@@ -1479,8 +1480,8 @@
     }
 
     function getSingleBatchItem(id,bid) {
-        var url = "{{url('/wbsmrsinglebatchitem')}}";
-        var token = "{{ Session::token() }}";
+        var url = "<?php echo e(url('/wbsmrsinglebatchitem')); ?>";
+        var token = "<?php echo e(Session::token()); ?>";
         var data = {
         _token: token,
             id : id
@@ -1526,8 +1527,8 @@
     }
 
     function checkIfNotForIQC(item) {
-        var url = "{{url('/wbsmrcheckifnotforiqc')}}";
-        var token = "{{ Session::token() }}";
+        var url = "<?php echo e(url('/wbsmrcheckifnotforiqc')); ?>";
+        var token = "<?php echo e(Session::token()); ?>";
         var data = {
         _token: token,
             item : item,
@@ -1549,8 +1550,8 @@
 
     function saveMR(mrdata,summarydata,notForIQC,savestate) {
         $('#loading').modal('show');
-        var url = '{{url("/wbsmrsave")}}';
-        var token = "{{ Session::token() }}";
+        var url = '<?php echo e(url("/wbsmrsave")); ?>';
+        var token = "<?php echo e(Session::token()); ?>";
         var data = {
         _token: token,
             savestate: savestate,
@@ -1585,8 +1586,8 @@
 
     function saveMrWithBatch(mrdataedit,summarydata,batchdata,notForIQC,notForIQCbatch,IsPrinted,savestate) {
         $('#loading').modal('show');
-        var url = '{{url("/wbsmrsave")}}';
-        var token = "{{ Session::token() }}";
+        var url = '<?php echo e(url("/wbsmrsave")); ?>';
+        var token = "<?php echo e(Session::token()); ?>";
         var data = {
         _token: token,
             savestate: savestate,
@@ -1773,8 +1774,8 @@
             var tbl_summary = '';
             var tbl_batch = '';
 
-            var url = '{{url("/wbsmrnumber")}}';
-            var token = "{{ Session::token() }}";
+            var url = '<?php echo e(url("/wbsmrnumber")); ?>';
+            var token = "<?php echo e(Session::token()); ?>";
             var data = {
                 _token: token,
                 receivingno: receivingno,
@@ -1840,8 +1841,8 @@
         var tbl_details = '';
         var tbl_summary = '';
         var tbl_batch = '';
-        var url = '{{url("/wbsmrdeletebatch")}}';
-        var token = "{{ Session::token() }}";
+        var url = '<?php echo e(url("/wbsmrdeletebatch")); ?>';
+        var token = "<?php echo e(Session::token()); ?>";
         var data = {
             _token: token,
             receivingno: $('#receivingno').val(),
@@ -1870,8 +1871,8 @@
     }
 
     function cancelInvoice() {
-        var url = '{{url("/wbsmrcanvelinvoice")}}';
-        var token = "{{ Session::token() }}";
+        var url = '<?php echo e(url("/wbsmrcanvelinvoice")); ?>';
+        var token = "<?php echo e(Session::token()); ?>";
         var data = {
             _token: token,
             receivingno: $('#receivingno').val(),
@@ -2111,8 +2112,8 @@ tabledata.find('tr').each(function (rowIndex, r) {
 
     function refreshInvoice() {
         $('#loading').modal('show');
-        var url = "{{ url('/wbsmr-refresh') }}";
-        var token = "{{ Session::token() }}";
+        var url = "<?php echo e(url('/wbsmr-refresh')); ?>";
+        var token = "<?php echo e(Session::token()); ?>";
         var data = {
             _token: token,
             invoiceno: $('#invoiceno').val()
@@ -2142,11 +2143,11 @@ tabledata.find('tr').each(function (rowIndex, r) {
         var opt = '<option value="">-- Select Supplier --</option>';
         $(el).html(opt);
         $.ajax({
-            url: "{{url('/getReceivingSupplier')}}",
+            url: "<?php echo e(url('/getReceivingSupplier')); ?>",
             type: 'GET',
             dataType: 'JSON',
             data: {
-                _token: "{{Session::token()}}",
+                _token: "<?php echo e(Session::token()); ?>",
                 name: "Material Receiving Supplier Input"
             },
         }).done(function( data, textStatus,jqXHR) {
@@ -2161,4 +2162,6 @@ tabledata.find('tr').each(function (rowIndex, r) {
         
     }
 </script>
-@endpush
+<?php $__env->stopPush(); ?>
+
+<?php echo $__env->make('layouts.master', array_except(get_defined_vars(), array('__data', '__path')))->render(); ?>

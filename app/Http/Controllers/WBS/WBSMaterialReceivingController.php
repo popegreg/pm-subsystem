@@ -879,7 +879,7 @@ class WBSMaterialReceivingController extends Controller
 
     private function checkIfExistObject($object)
     {
-       return count( (array)$object);
+       return count((array)$object);
     }
 
     private function getVariance($wbs_mr_id,$qty)
@@ -1775,7 +1775,7 @@ class WBSMaterialReceivingController extends Controller
             $data = DB::connection($this->mssql)
                 ->table('XSACT as S')
                 ->join('XHEAD as H', 'H.CODE', '=','S.CODE')
-                ->leftJoin(DB::raw('(SELECT z.CODE, z.RACKNO FROM XZAIK z WHERE z.JYOGAI = 0) AS Z'), 'Z.CODE', '=','S.CODE')
+                ->leftJoin(DB::raw("(SELECT z.CODE, z.RACKNO FROM XZAIK z WHERE z.JYOGAI = 0 and HOKAN = 'WHS100') AS Z"), 'Z.CODE', '=','S.CODE')
                 ->select('S.CODE as code','H.NAME as name', 'Z.RACKNO as rackno')
                 ->where('S.INVOICE_NUM', '=', $req->invoice_no)
                 ->where('S.CODE', '=', $req->itemcode)
@@ -2223,7 +2223,7 @@ class WBSMaterialReceivingController extends Controller
         $data = DB::connection($this->mssql)
                 ->table('XSACT as S')
                 ->join('XHEAD as H', 'H.CODE', '=','S.CODE')
-                ->leftJoin(DB::raw('(SELECT z.CODE, z.RACKNO FROM XZAIK z WHERE z.JYOGAI = 0) AS Z'), 'Z.CODE', '=','S.CODE')
+                ->leftJoin(DB::raw("(SELECT z.CODE, z.RACKNO FROM XZAIK z WHERE z.JYOGAI = 0 AND HOKAN = 'WHS100') AS Z"), 'Z.CODE', '=','S.CODE')
                 ->select('S.CODE as code','H.NAME as name', 'Z.RACKNO as rackno')
                 ->where('S.INVOICE_NUM', '=', $invoice)
                 ->where('S.CODE', '=', $item)
@@ -2237,7 +2237,7 @@ class WBSMaterialReceivingController extends Controller
             $data = DB::connection($this->mssql)
                 ->table('XSACT as S')
                 ->join('XHEAD as H', 'H.CODE', '=','S.CODE')
-                ->leftJoin(DB::raw('(SELECT z.CODE, z.RACKNO FROM XZAIK z WHERE z.JYOGAI = 0) AS Z'), 'Z.CODE', '=','S.CODE')
+                ->leftJoin(DB::raw("(SELECT z.CODE, z.RACKNO FROM XZAIK z WHERE z.JYOGAI = 0 AND HOKAN = 'WHS100') AS Z"), 'Z.CODE', '=','S.CODE')
                 ->select('S.CODE as code','H.NAME as name', 'Z.RACKNO as rackno')
                 ->where('S.INVOICE_NUM', '=', $invoice)
                 ->where('S.CODE', '=', $item)
@@ -2788,10 +2788,9 @@ class WBSMaterialReceivingController extends Controller
                   FROM [XZAIK]
                   WHERE HOKAN = 'WHS100'
                   AND CODE = '". $req->code ."'
-                  GROUP BY CODE,RACKNO");
+                  GROUP BY CODE, RACKNO");
 
          return $data;
-
     }
 
     public function getReceivingSupplier(Request $req)
